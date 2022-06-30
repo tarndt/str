@@ -8,29 +8,33 @@ import (
 	"unsafe"
 )
 
-func (s String) String() string {
+func (s Str) Len() int {
+	return len(s)
+}
+
+func (s Str) String() string {
 	return string(s)
 }
 
-func (s String) Bytes() []byte {
+func (s Str) Bytes() []byte {
 	return []byte(s)
 }
 
-func (s String) Buffer() *bytes.Buffer {
+func (s Str) Buffer() *bytes.Buffer {
 	return bytes.NewBuffer(s.Bytes())
 }
 
-func (s String) Reader() io.Reader {
+func (s Str) Reader() io.Reader {
 	return strings.NewReader(string(s))
 }
 
-func (s String) ReaderCloser() io.ReadCloser {
+func (s Str) ReaderCloser() io.ReadCloser {
 	return io.NopCloser(s.Reader())
 }
 
-var _ io.WriterTo = String("")
+var _ io.WriterTo = Str("")
 
-func (s String) WriteTo(wtr io.Writer) (int64, error) {
+func (s Str) WriteTo(wtr io.Writer) (int64, error) {
 	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&s))
 
 	var slice []byte

@@ -7,47 +7,51 @@ import (
 )
 
 //String is a string with all the strings.* functions as methods
-type String string
+type Str string
 
-//New returns a new String from a Go value. Use String(string) for strings to
-// avoid reflection overhead.
-func New(val any) String {
+//New returns a new String from am arbitrary Go value. Use a simple cast,
+// Str(s string), for variables known to be strings to avoid reflection overhead.
+func New(val any) Str {
 	switch val := val.(type) {
-	case String:
+	case Str:
 		return val
 	case string:
-		return String(val)
+		return Str(val)
 	case []byte:
-		return String(val)
+		return Str(val)
 	case []rune:
-		return String(val)
+		return Str(val)
 	case fmt.Stringer:
-		return String(val.String())
+		return Str(val.String())
 	case error:
-		return String(val.Error())
-	case *String:
-		return *val
+		return Str(val.Error())
 	case *string:
-		return String(*val)
+		return Str(*val)
 	default:
-		return String(fmt.Sprint(val))
+		return Str(fmt.Sprint(val))
 	}
 }
 
-func Newf(format string, args ...any) String {
-	return String(fmt.Sprintf(format, args...))
+//Newf formats according to a format specifier and returns the resulting Str.
+// See the similar fmt.Sprintf.
+func Newf(format string, args ...any) Str {
+	return Str(fmt.Sprintf(format, args...))
 }
 
-func ReadFrom(rdr io.Reader) (String, error) {
+//ReadFrom consumes the provided reader and returns a Str with its content. To
+//limit read bytes wrap the reader or use ReadFromLimit.
+func ReadFrom(rdr io.Reader) (Str, error) {
 	var buf bytes.Buffer
 	_, err := buf.ReadFrom(rdr)
 	if err != nil {
 		return "", err
 	}
 
-	return String(buf.String()), nil
+	return Str(buf.String()), nil
 }
 
-func ReadFromLimit(rdr io.Reader, n int64) (String, error) {
+//ReadFromLimit is like ReadFrom but limits the maximum number of bytes read from
+// the provided reader.
+func ReadFromLimit(rdr io.Reader, n int64) (Str, error) {
 	return ReadFrom(&io.LimitedReader{R: rdr, N: n})
 }
