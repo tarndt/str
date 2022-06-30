@@ -114,7 +114,7 @@ func TestSliceAppend(t *testing.T) {
 	}
 
 	if !slice.Equal(Strs{"a", "b"}) {
-		t.Fatal("Append should not have modified orginal slice")
+		t.Fatal("Append should not have modified original slice")
 	}
 }
 

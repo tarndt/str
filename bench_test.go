@@ -7,7 +7,7 @@ import (
 )
 
 //The tests below seek to confirm abstraction overhead is lower, or complex
-// implementations justify their existance with gained performance.
+// implementations justify their existence with gained performance.
 
 func BenchmarkStringRefComplex(b *testing.B) {
 	const (
