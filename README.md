@@ -19,6 +19,7 @@ s := str.Str("foobar")
 fromInt := str.New(3)
 fromStringer := str.New(myStringer)
 fromAnything := str.New(someObject)
+formatedStr := str.Newf("No need to call %s", "Sprintf")
 ```
 
 Use any of the stdlib strings.* functions as methods:
