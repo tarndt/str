@@ -6,7 +6,9 @@ import (
 	"io"
 )
 
-//String is a string with all the strings.* functions as methods
+//String is a string with all the strings.* functions as methods as well as a
+// few other notable convenience methods such as Bytes(), Buffer(), Reader(),
+// ReadCloser() and fulfillment of io.WriterTo.
 type Str string
 
 //New returns a new String from am arbitrary Go value. Use a simple cast,

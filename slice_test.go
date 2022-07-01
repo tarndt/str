@@ -16,7 +16,7 @@ var basicTestCases = [][]string{
 	[]string{"is", "a", "triple"},
 }
 
-func TestSliceStringsLen(t *testing.T) {
+func TestStrsStringsLen(t *testing.T) {
 	t.Parallel()
 
 	for _, tcase := range basicTestCases {
@@ -34,7 +34,16 @@ func TestSliceStringsLen(t *testing.T) {
 	}
 }
 
-func TestSliceString(t *testing.T) {
+func TestStrsClone(t *testing.T) {
+	orig := Strs{"a", "b", "c"}
+	clone := orig.Clone()
+
+	if unsafe.Pointer(&orig) == unsafe.Pointer(&clone) {
+		t.Fatalf("Returned slice should have been newly allocated")
+	}
+}
+
+func TestStrsString(t *testing.T) {
 	for _, tcase := range basicTestCases {
 		t.Run(fmt.Sprint(tcase), func(t *testing.T) {
 			if expected, actual := fmt.Sprint(tcase), Slice(tcase...); expected != actual.String() {
@@ -46,7 +55,7 @@ func TestSliceString(t *testing.T) {
 	}
 }
 
-func TestSliceEqual(t *testing.T) {
+func TestStrsEqual(t *testing.T) {
 	t.Parallel()
 
 	sameSlice := Slice(basicTestCases[4]...)
@@ -91,7 +100,7 @@ func TestSliceEqual(t *testing.T) {
 	}
 }
 
-func TestSliceAppend(t *testing.T) {
+func TestStrsAppend(t *testing.T) {
 	t.Parallel()
 
 	slice := Strs{}
@@ -118,7 +127,7 @@ func TestSliceAppend(t *testing.T) {
 	}
 }
 
-func TestSliceAppendAny(t *testing.T) {
+func TestStrsAppendAny(t *testing.T) {
 	t.Parallel()
 
 	slice, ref := Strs{}, (Strs)(nil)
@@ -192,7 +201,73 @@ func (pt point) String() string {
 	return Newf("(%d,%d)", pt.x, pt.y).String()
 }
 
-func TestSliceJoin(t *testing.T) {
+func TestStrsIndexContainsRemoveStr(t *testing.T) {
+	t.Parallel()
+
+	tcases := []struct {
+		desc, target Str
+		slice        Strs
+		expected     int
+	}{
+		{desc: "nil", target: "a", slice: nil, expected: -1},
+		{desc: "empty", target: "a", slice: Strs{}, expected: -1},
+		{desc: "singleton-match", target: "a", slice: Strs{"a"}, expected: 0},
+		{desc: "singleton-nomatch", target: "a", slice: Strs{"b"}, expected: -1},
+		{desc: "tuple-match-first", target: "a", slice: Strs{"a", "b"}, expected: 0},
+		{desc: "tuple-match-second", target: "a", slice: Strs{"b", "a"}, expected: 1},
+		{desc: "tuple-match-none", target: "a", slice: Strs{"x", "y"}, expected: -1},
+		{desc: "triple-match-first", target: "a", slice: Strs{"a", "b", "c"}, expected: 0},
+		{desc: "triple-match-second", target: "b", slice: Strs{"a", "b", "c"}, expected: 1},
+		{desc: "triple-match-third", target: "c", slice: Strs{"a", "b", "c"}, expected: 2},
+		{desc: "triple-match-none", target: "x", slice: Strs{"a", "b", "c"}, expected: -1},
+	}
+
+	for _, tcase := range tcases {
+		t.Run(tcase.desc.String(), func(t *testing.T) {
+			t.Run("contains", func(t *testing.T) {
+				switch tcase.expected {
+				case -1:
+					if tcase.slice.Contains(tcase.target) {
+						t.Fatalf("%s should not have contained %q but Contains returned true", tcase.slice, tcase.target)
+					}
+				default:
+					if !tcase.slice.Contains(tcase.target) {
+						t.Fatalf("%s should have contained %q but Contains returned false", tcase.slice, tcase.target)
+					}
+				}
+			})
+
+			t.Run("index", func(t *testing.T) {
+				idx := tcase.slice.Index(tcase.target)
+				if idx != tcase.expected {
+					t.Fatalf("%s should have was expected to have %q at index %d but Index returned %d", tcase.slice, tcase.target, tcase.expected, idx)
+				}
+			})
+
+			t.Run("removestr", func(t *testing.T) {
+				origLen := tcase.slice.Len()
+				removed := tcase.slice.RemoveStr(tcase.target)
+				switch tcase.expected {
+				case -1:
+					if removed.Len() != origLen {
+						t.Fatalf("After remove %s should have been the same size", removed)
+					}
+				default:
+					if removed.Len() != origLen-1 {
+						t.Fatalf("After remove %s should have contained %d rather than %d elements", removed, origLen-1, origLen)
+					}
+				}
+
+				if rmIdx := removed.Index(tcase.target); rmIdx != -1 {
+					t.Fatalf("After remove %s should not have contained %q but Index found it at %d", tcase.slice, tcase.target, rmIdx)
+				}
+			})
+
+		})
+	}
+}
+
+func TestStrsJoin(t *testing.T) {
 	t.Parallel()
 
 	const sep = ","
@@ -206,7 +281,7 @@ func TestSliceJoin(t *testing.T) {
 	}
 }
 
-func TestSliceMaps(t *testing.T) {
+func TestStrsMaps(t *testing.T) {
 	t.Parallel()
 
 	f1 := func(s string) string {
@@ -239,7 +314,7 @@ func TestSliceMaps(t *testing.T) {
 				clone := make([]string, len(tcase))
 				copy(clone, tcase)
 
-				slice := Slice(clone...).MapNew(f2)
+				slice := Slice(clone...).MappedNew(f2)
 				if unsafe.Pointer(&slice) == unsafe.Pointer(&clone) {
 					t.Fatalf("Returned map should have been newly allocated")
 				}
@@ -250,6 +325,51 @@ func TestSliceMaps(t *testing.T) {
 					}
 				}
 			})
+		}
+	})
+}
+
+func TestStrsSorts(t *testing.T) {
+	t.Parallel()
+
+	oooSlice := Strs{"a", "d", "c", "b", "f"}
+
+	properySorted := func(t *testing.T, oooSlice, sortedSlice Strs) {
+		elems := make(map[Str]bool)
+		for _, str := range oooSlice {
+			elems[str] = false
+		}
+
+		var last Str
+		for _, str := range sortedSlice {
+			if last != "" && str < last {
+				t.Fatalf("Found out of order element %q that was > preceding element %q", str, last)
+			}
+
+			if _, present := elems[str]; !present {
+				t.Fatalf("Found element %q that did not exist in %s", str, oooSlice)
+			}
+			elems[str] = true
+		}
+
+		for elem, found := range elems {
+			if !found {
+				t.Fatalf("Element %q was missing in sorted slice %s but was in original %s", elem, sortedSlice, oooSlice)
+			}
+		}
+	}
+
+	t.Run("sort", func(t *testing.T) {
+		sortedSlice := oooSlice.Clone()
+		sortedSlice.Sort()
+		properySorted(t, oooSlice, sortedSlice)
+	})
+
+	t.Run("sortedNew", func(t *testing.T) {
+		sortedSlice := oooSlice.SortedNew()
+		properySorted(t, oooSlice, sortedSlice)
+		if unsafe.Pointer(&oooSlice) == unsafe.Pointer(&sortedSlice) {
+			t.Fatalf("Returned slice should have been newly allocated")
 		}
 	})
 }

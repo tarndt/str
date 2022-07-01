@@ -1,6 +1,7 @@
 package str
 
 import (
+	"sort"
 	"strings"
 	"unsafe"
 )
@@ -11,6 +12,13 @@ type Strs []Str
 //Slice  constructs a new list of Str.
 func Slice(strs ...string) Strs {
 	return Strs(*((*[]Str)(unsafe.Pointer(&strs))))
+}
+
+//Clone creates a copy of this slice
+func (s Strs) Clone() Strs {
+	clone := make(Strs, len(s))
+	copy(clone, s)
+	return clone
 }
 
 //Strings converts this slice of Strs to a slice of strings in an optimized manner.
@@ -70,6 +78,37 @@ func (s Strs) AppendAny(others ...any) Strs {
 	return slice
 }
 
+//Remove removes the ith element from the slice and returns it.
+func (s Strs) Remove(i int) Strs {
+	lastIdx := len(s) - 1
+	if i < 0 || i > lastIdx {
+		return s
+	}
+
+	copy(s[i:], s[i+1:])
+	return s[:lastIdx]
+}
+
+//RemoveStr removes the first instance the the Str found from the slice and returns it.
+func (s Strs) RemoveStr(str Str) Strs {
+	return s.Remove(s.Index(str))
+}
+
+//Contains returns if the slice contains the Str
+func (s Strs) Contains(str Str) bool {
+	return s.Index(str) >= 0
+}
+
+//Index returns the index of the first occurrence of the Str
+func (s Strs) Index(str Str) int {
+	for i, elem := range s {
+		if elem == str {
+			return i
+		}
+	}
+	return -1
+}
+
 //Join concatenates the elements of its first argument to create a single string
 // delimited by sep. See strings.Join.
 func (s Strs) Join(sep Str) Str {
@@ -84,12 +123,25 @@ func (s Strs) Map(f func(s Str) Str) {
 	}
 }
 
-//MapNew is like Map but rather than modifying this slice a new one is created
+//MappedNew is like Map but rather than modifying this slice a new one is created
 // from the mapping.
-func (s Strs) MapNew(f func(s Str) Str) Strs {
+func (s Strs) MappedNew(f func(s Str) Str) Strs {
 	mapped := make(Strs, 0, len(s))
 	for _, str := range s {
 		mapped = append(mapped, f(str))
 	}
 	return mapped
+}
+
+//Sort sorts the Strs in this slice in ascending order
+func (s Strs) Sort() {
+	sort.Strings(s.Strings())
+}
+
+//SortedNew is like Sort but rather than modifying this slice a new one sorted
+// ascending is created
+func (s Strs) SortedNew() Strs {
+	clone := s.Clone()
+	clone.Sort()
+	return clone
 }
