@@ -10,6 +10,47 @@ This is an experimental string package that imagines strings in Go as a complex 
 
 Those caveats aside, if you choose to use this, feedback and thoughts in the form of pull requests or issues are welcome.
 
+## Using it
+
+Declare a `Str` "string":
+```go 
+var s str.Str
+s := str.Str("foobar")
+fromInt := str.New(3)
+fromStringer := str.New(myStringer)
+fromAnything := str.New(someObject)
+```
+
+Use any of the stdlib strings.* functions as methods:
+```go
+lowerAlpha := str.Str(" -abc ").TrimSpace().TrimSuffix("-")
+upperAlpha := lowerAlpha.ToUpper()
+```
+
+Use it as a HTTP request body:
+```go
+resp, err: = http.Post("http://example.test.com", "text/plain", upperAlpha.Reader())
+```
+
+Or, get it in a buffer and append it to itself:
+```go
+buf := upperAlpha.Buffer()
+_, err := upperAlpha.WriteTo(buf)
+```
+
+Or, start a list of `Strs` and play with it:
+```go
+slice := str.Slice(lowerAlpha, upperAlpha)
+slice = slice.Append("somethingElse")
+slice = slice.Append("x", "y").AppendAny(3.14159).Remove(0).RemoveStr("x")
+slice.Sort()
+
+if slice.Contains("x") {
+	 panic("I removed x!")
+}
+```
+
+
 ## Future
 
 * TODO: Further unit tests will be added if the experiment has initial positive returns.
